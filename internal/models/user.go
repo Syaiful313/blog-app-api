@@ -38,6 +38,10 @@ type CreateUserRequest struct {
 	LastName  string `json:"last_name" validate:"required"`
 }
 
+type RegisterResponse struct {
+	User UserResponse `json:"user"`
+}
+
 // LoginRequest represents the login request
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
