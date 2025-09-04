@@ -6,7 +6,6 @@ import (
 )
 
 func SetupRoutes(app *fiber.App, cfg *config.Config) {
-    // Health check
     app.Get("/api/health", func(c *fiber.Ctx) error {
         return c.JSON(fiber.Map{
             "status":  "ok", 
@@ -14,10 +13,9 @@ func SetupRoutes(app *fiber.App, cfg *config.Config) {
         })
     })
 
-    // API routes
     api := app.Group("/")
 
-    // Setup route groups
     SetupAuthRoutes(api, cfg)
 	SetupSampleRoutes(api, cfg)
+    SetupBlogRouter(api, cfg)
 }
