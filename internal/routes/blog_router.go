@@ -14,4 +14,6 @@ func SetupBlogRouter(api fiber.Router, cfg *config.Config) {
 	blogs := api.Group("/blogs")
 
 	blogs.Post("/", middleware.AuthMiddleware(cfg), blogController.CreateBlog)
+	blogs.Get("/", blogController.GetBlogs)
+	blogs.Get("/:id", blogController.GetBlog)
 }
