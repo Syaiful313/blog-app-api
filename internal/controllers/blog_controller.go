@@ -15,26 +15,38 @@ type BlogController struct {
 	blogService *services.BlogService
 }
 
-func NewBlogController(cfg *config.Config) *BlogController {
-	return &BlogController{
-		blogService: services.NewBlogService(cfg),
+func NewBlogController(cfg *config.Config) (*BlogController, error) {
+	blogService, err := services.NewBlogService(cfg)
+	if err != nil {
+		return nil, err
 	}
+	return &BlogController{
+		blogService: blogService,
+	}, nil
 }
 
 func (h *BlogController) CreateBlog(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
-	var req models.CreateBlogRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
+	title := c.FormValue("title")
+	content := c.FormValue("content")
+	published := c.FormValue("published") == "true"
 
-	if req.Title == "" || req.Content == "" {
+	if title == "" || content == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Title and content are required",
 		})
+	}
+
+	req := models.CreateBlogRequest{
+		Title:     title,
+		Content:   content,
+		Published: published,
+	}
+
+	file, err := c.FormFile("image")
+	if err == nil {
+		req.Image = file
 	}
 
 	blog, err := h.blogService.CreateBlog(userID, req)
@@ -49,7 +61,6 @@ func (h *BlogController) CreateBlog(c *fiber.Ctx) error {
 		"data":    blog.ToResponse(),
 	})
 }
-
 func (h *BlogController) GetBlogs(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
@@ -73,14 +84,13 @@ func (h *BlogController) GetBlogs(c *fiber.Ctx) error {
 		},
 	})
 }
-
-func (h *BlogController) GetBlog(c *fiber.Ctx) error {
+func (h *BlogController) GetBlogById(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid blog ID"})
 	}
 
-	blog, err := h.blogService.GetBlog(uint(id))
+	blog, err := h.blogService.GetBlogById(uint(id))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Blog not found"})
@@ -89,4 +99,44 @@ func (h *BlogController) GetBlog(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"data": blog.ToResponse()})
+}
+func (h *BlogController) UpdateBlog(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uint)
+
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid blog ID"})
+	}
+
+	title := c.FormValue("title")
+	content := c.FormValue("content")
+	publishedStr := c.FormValue("published")
+
+	req := models.UpdateBlogRequest{
+		Title:   title,
+		Content: content,
+	}
+
+	if publishedStr != "" {
+		published := publishedStr == "true"
+		req.Published = &published
+	}
+
+	file, err := c.FormFile("image")
+	if err == nil {
+		req.Image = file
+	}
+
+	blog, err := h.blogService.UpdateBlog(uint(id), userID, req)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Blog not found"})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Blog updated successfully",
+		"data":    blog.ToResponse(),
+	})
 }

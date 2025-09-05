@@ -6,7 +6,7 @@ import (
 
 	"go-fiber-boilerplate/config"
 	"go-fiber-boilerplate/database"
-	"go-fiber-boilerplate/internal/middleware"
+	"go-fiber-boilerplate/internal/middlewares"
 	"go-fiber-boilerplate/internal/routes"
 
 	"github.com/gofiber/fiber/v2"
@@ -23,14 +23,14 @@ func main() {
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
-		ErrorHandler: middleware.ErrorHandler,
+		ErrorHandler: middlewares.ErrorHandler,
 		DisableStartupMessage: true, // Menonaktifkan pesan startup default Fiber
 	})
 
 	// Middleware
 	app.Use(logger.New())
 	app.Use(recover.New())
-	app.Use(middleware.CORSMiddleware(cfg))
+	app.Use(middlewares.CORSMiddleware(cfg))
 
 	// Setup routes
 	routes.SetupRoutes(app, cfg)
