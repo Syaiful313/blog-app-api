@@ -1,6 +1,7 @@
 package models
 
 import (
+	"mime/multipart"
 	"time"
 
 	"gorm.io/gorm"
@@ -12,6 +13,8 @@ type Blog struct {
 	Content   string         `json:"content" gorm:"not null;type:text"`
 	Slug      string         `json:"slug" gorm:"unique;not null;size:255"`
 	Published bool           `json:"published" gorm:"default:false"`
+	ImageURL  string         `json:"image_url" gorm:"size:255"`
+	ImageID   string         `json:"image_id" gorm:"size:255"`
 	UserID    uint           `json:"userId" gorm:"not null"`
 	User      User           `json:"user" gorm:"foreignKey:UserID"`
 	CreatedAt time.Time      `json:"created_at"`
@@ -27,22 +30,24 @@ type BlogResponse struct {
 	Published bool         `json:"published"`
 	UserID    uint         `json:"userId"`
 	User      UserResponse `json:"user"`
+	ImageURL  string       `json:"image_url"`
 	CreatedAt time.Time    `json:"created_at"`
 	UpdatedAt time.Time    `json:"updated_at"`
 }
 
 type CreateBlogRequest struct {
-	Title     string `json:"title" validate:"required,min=1,max=255"`
-	Content   string `json:"content" validate:"required,min=1"`
-	Published bool   `json:"published"`
-	Slug      string `json:"slug" validate:"required,min=1,max=255"`
-	UserID    uint   `json:"user_id"`
+	Title     string          `json:"title" validate:"required,min=1,max=255"`
+	Content   string          `json:"content" validate:"required,min=1"`
+	Published bool            `json:"published"`
+	UserID    uint            `json:"user_id"`
+	Image     *multipart.FileHeader `json:"image" form:"image"`
 }
 
 type UpdateBlogRequest struct {
-	Title     string `json:"title" validate:"required,min=1,max=255"`
-	Content   string `json:"content" validate:"required,min=1"`
-	Published bool   `json:"published"`
+	Title     string                `json:"title" validate:"required,min=1,max=255"`
+	Content   string                `json:"content" validate:"required,min=1"`
+	Published *bool                 `json:"published"`
+	Image     *multipart.FileHeader `json:"image" form:"image"`
 }
 
 type BlogQueryParams struct {
@@ -62,6 +67,7 @@ func (u *Blog) ToResponse() BlogResponse {
 		Published: u.Published,
 		UserID:    u.UserID,
 		User:      u.User.ToResponse(),
+		ImageURL:  u.ImageURL,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	}
