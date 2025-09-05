@@ -154,3 +154,27 @@ func (s *BlogService) UpdateBlog(id uint, userId uint, req models.UpdateBlogRequ
 	database.GetDB().Preload("User").First(&blog, blog.ID)
 	return &blog, nil
 }
+
+func (s *BlogService) DeleteBlog(id uint, userId uint) error {
+	var blog models.Blog
+	if err := database.GetDB().First(&blog, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return gorm.ErrRecordNotFound
+		}
+		return err
+	}
+
+	if blog.UserID != userId {
+		return errors.New("unauthorized to delete this blog")
+	}
+
+	if err := database.GetDB().Delete(&blog).Error; err != nil {
+		return err
+	}
+
+	if blog.ImageID != "" {
+		_ = s.cloudinary.DeleteImage(blog.ImageID)
+	}
+
+	return nil
+}

@@ -28,5 +28,8 @@ func SetupBlogRouter(api fiber.Router, cfg *config.Config) {
 		middlewares.NewUploaderMiddleware().ImageUpload(2, []string{"image/jpeg", "image/png"}),
 		blogController.UpdateBlog,
 	)
+	blogs.Delete("/:id",
+		middlewares.AuthMiddleware(cfg),
+		blogController.DeleteBlog,
+	)
 }
-	
