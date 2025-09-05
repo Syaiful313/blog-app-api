@@ -140,3 +140,21 @@ func (h *BlogController) UpdateBlog(c *fiber.Ctx) error {
 		"data":    blog.ToResponse(),
 	})
 }
+func (h *BlogController) DeleteBlog(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uint)
+
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid blog ID"})
+	}
+
+	err = h.blogService.DeleteBlog(uint(id), userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Blog not found"})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Blog deleted successfully"})
+}
